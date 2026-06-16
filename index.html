@@ -1,22 +1,15 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>근태 대휴 계산기</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;margin:0;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f5f5f3;color:#1a1a18;padding:1.25rem 1rem 1.25rem;display:flex;flex-direction:column;}
-.wrap{max-width:1100px;margin:0 auto;width:100%;flex:1;display:flex;flex-direction:column;}
-.app-title{font-size:18px;font-weight:500;color:#1a1a18;margin-bottom:1.5rem;display:flex;align-items:center;gap:8px;}
-.app-title span{font-size:13px;font-weight:400;color:#888780;}
-.layout{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:stretch;flex:1;}
-.col-left{min-width:0;display:flex;flex-direction:column;}
-.col-right{min-width:0;display:flex;flex-direction:column;}
-.col-left .card:last-child{flex:1;}
-.col-right .card:last-child{flex:1;}
-@media(max-width:700px){.layout{grid-template-columns:1fr;}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;background:#f5f5f3;color:#1a1a18;min-height:100vh;padding:1.5rem 1rem 3rem;}
+.wrap{max-width:560px;margin:0 auto;}
+h1{font-size:18px;font-weight:500;margin-bottom:1.5rem;display:flex;align-items:center;gap:8px;color:#1a1a18;}
+h1 span{font-size:13px;font-weight:400;color:#888780;}
 .card{background:#fff;border:0.5px solid rgba(0,0,0,.12);border-radius:12px;padding:1.25rem;margin-bottom:1rem;}
 .card-title{font-size:14px;font-weight:500;color:#1a1a18;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
 .row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
@@ -30,6 +23,7 @@ select:focus{border-color:#378add;}
 .tp-btn:hover{background:#f1efe8;color:#1a1a18;}
 .tp-val{font-size:14px;font-weight:500;color:#1a1a18;min-width:20px;text-align:center;user-select:none;}
 .tp-colon{font-size:14px;color:#888780;padding:0 1px;}
+.tp-div{width:0.5px;background:rgba(0,0,0,.12);height:22px;margin:0 2px;}
 /* 메트릭 */
 .metric{background:#f1efe8;border-radius:8px;padding:.75rem 1rem;}
 .metric-lbl{font-size:12px;color:#5f5e5a;margin-bottom:3px;}
@@ -66,23 +60,18 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.1);margin:12px 0;}
 .io-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;border:0.5px solid rgba(0,0,0,.15);background:#f1efe8;color:#1a1a18;transition:background .15s;}
 .io-btn:hover{background:#e8e6de;}
 .io-btn.export{border-color:#378add;color:#185fa5;background:#e6f1fb;}
-.io-btn.clear{border-color:#f09595;color:#a32d2d;}
-.autosave-badge{font-size:11px;color:#0f6e56;background:#e0f2ec;border-radius:20px;padding:2px 10px;margin-left:auto;display:flex;align-items:center;gap:4px;}
-/* 변경 내역 */
-.ot-list{max-height:160px;overflow-y:auto;}
-.ot-list::-webkit-scrollbar{width:4px;}
-.ot-list::-webkit-scrollbar-track{background:transparent;}
-.ot-list::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:2px;}
-.ot-more{font-size:11px;color:#888780;text-align:center;padding:6px 0;border-top:0.5px solid rgba(0,0,0,.08);margin-top:4px;}
-.ot-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid rgba(0,0,0,.08);font-size:13px;}
-.ot-row:last-child{border-bottom:none;}
-.ot-date{color:#5f5e5a;}
+.io-btn.import{border-color:#3b6d11;color:#3b6d11;background:#eaf3de;}
+.io-btn.clear{border-color:#f09595;color:#a32d2d;margin-left:auto;}
 /* 대휴 */
 .leave-box{background:#f1efe8;border-radius:12px;padding:1.25rem;margin-top:8px;text-align:center;}
 .leave-main{font-size:32px;font-weight:500;color:#0f6e56;}
 .leave-sub{font-size:13px;color:#5f5e5a;margin-top:4px;}
 .leave-chips{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;}
 .chip{font-size:12px;background:#fff;border:0.5px solid rgba(0,0,0,.12);border-radius:20px;padding:3px 12px;color:#5f5e5a;}
+/* 내역 */
+.ot-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid rgba(0,0,0,.08);font-size:13px;}
+.ot-row:last-child{border-bottom:none;}
+.ot-date{color:#5f5e5a;}
 /* 모달 */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
@@ -109,15 +98,39 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.1);margin:12px 0;}
 /* 토스트 */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:9px 22px;border-radius:24px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;}
+/* 다크모드 */
+@media(prefers-color-scheme:dark){
+  body{background:#1c1c1a;color:#e8e6de;}
+  .card{background:#2c2c2a;border-color:rgba(255,255,255,.1);}
+  .card-title,.modal-title{color:#e8e6de;}
+  select{background:#2c2c2a;color:#e8e6de;border-color:rgba(255,255,255,.15);}
+  .time-picker{background:#2c2c2a;border-color:rgba(255,255,255,.15);}
+  .tp-val{color:#e8e6de;}
+  .tp-btn{color:#b4b2a9;}
+  .tp-btn:hover{background:#383836;color:#e8e6de;}
+  .tp-div{background:rgba(255,255,255,.12);}
+  .metric,.leave-box,.day-cell.work,.day-cell.modified,.io-btn,.type-btn{background:#383836;}
+  .metric-val{color:#e8e6de;}
+  .metric-lbl,.lbl,.note,.ot-date,.day-hdr,.legend-item,.leave-sub{color:#b4b2a9;}
+  .modal{background:#2c2c2a;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+  .modal-sub{color:#b4b2a9;}
+  .diff-box.zero{background:#383836;color:#b4b2a9;}
+  .chip{background:#383836;border-color:rgba(255,255,255,.1);color:#b4b2a9;}
+  .io-btn{background:#383836;border-color:rgba(255,255,255,.12);color:#e8e6de;}
+  .io-btn.export{background:#1a2d3d;color:#85b7eb;border-color:#378add;}
+  .io-btn.import{background:#1a2d1a;color:#97c459;border-color:#639922;}
+  .btn-primary{background:#e8e6de;color:#1a1a18;}
+  .btn-secondary{border-color:rgba(255,255,255,.2);color:#e8e6de;}
+  .btn-secondary:hover{background:#383836;}
+  .ot-row{border-color:rgba(255,255,255,.08);}
+  hr{border-color:rgba(255,255,255,.08);}
+  .day-cell.weekend{color:#5f5e5a;}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1 class="app-title">📋 근태 대휴 계산기 <span>07:00~16:00 기준</span></h1>
-  <div class="layout">
-
-  <!-- 왼쪽 컬럼 -->
-  <div class="col-left">
+  <h1>📋 근태 대휴 계산기 <span>07:00~16:00 기준</span></h1>
 
   <div class="card">
     <div class="card-title">📅 급여 기간</div>
@@ -147,24 +160,23 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.1);margin:12px 0;}
         <option value="09:30|18:30">09:30 ~ 18:30</option>
         <option value="10:00|19:00">10:00 ~ 19:00</option>
       </select>
-      <span style="font-size:12px;color:#888780" id="schedule-note">휴게 1h, 실근무 8h</span>
+      <span style="font-size:12px;color:#888780" id="schedule-note">휴게 1h 포함, 실근무 8h</span>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">💾 데이터 관리</div>
+    <div class="card-title">💾 데이터 저장 / 불러오기</div>
     <div class="io-row">
-      <button class="io-btn export" onclick="exportJSON()">⬇ JSON 백업</button>
-      <button class="io-btn" onclick="document.getElementById('file-input').click()">⬆ JSON 복원</button>
+      <button class="io-btn export" onclick="exportJSON()">⬇ JSON 저장</button>
+      <button class="io-btn import" onclick="document.getElementById('file-input').click()">⬆ JSON 불러오기</button>
       <input type="file" id="file-input" accept=".json" style="display:none" onchange="importJSON(event)">
-      <button class="io-btn clear" onclick="clearAll()">🗑 초기화</button>
-      <span class="autosave-badge">● 자동저장</span>
+      <button class="io-btn clear" onclick="clearAll()">🗑 전체 초기화</button>
     </div>
-    <p class="note" id="save-info">불러오는 중...</p>
+    <p class="note" id="save-info">저장된 변경 데이터 없음</p>
   </div>
 
   <div class="card">
-    <div class="card-title">🗓 근무 달력 <span style="font-size:12px;color:#888780;font-weight:400">— 평일 클릭 → 수정</span></div>
+    <div class="card-title">🗓 근무 달력 <span style="font-size:12px;color:#888780;font-weight:400">— 평일 클릭 → 근무시간 수정</span></div>
     <div class="day-grid">
       <div class="day-hdr sun">일</div><div class="day-hdr">월</div><div class="day-hdr">화</div>
       <div class="day-hdr">수</div><div class="day-hdr">목</div><div class="day-hdr">금</div>
@@ -175,20 +187,14 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.1);margin:12px 0;}
     <div class="legend">
       <div class="legend-item"><span class="legend-dot" style="background:#e6f1fb;border:0.5px solid #85b7eb;"></span>연장</div>
       <div class="legend-item"><span class="legend-dot" style="background:#fcebeb;border:0.5px solid #f09595;"></span>단축</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#f7c1c1;border:0.5px solid #e24b4a;"></span>결근</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#f7c1c1;border:0.5px solid #e24b4a;"></span>결근 (-8h)</div>
       <div class="legend-item"><span class="legend-dot" style="background:#faeeda;border:0.5px solid #ef9f27;"></span>임시공휴일</div>
     </div>
   </div>
 
-  </div><!-- col-left -->
-
-  <!-- 오른쪽 컬럼 -->
-  <div class="col-right">
-
-  <div class="card" id="detail-card">
+  <div class="card" id="detail-card" style="display:none;">
     <div class="card-title">📝 근무 변경 내역</div>
-    <div class="ot-list" id="detail-list"></div>
-    <div class="ot-more" id="ot-more" style="display:none;"></div>
+    <div id="detail-list"></div>
   </div>
 
   <div class="card">
@@ -204,14 +210,10 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.1);margin:12px 0;}
       <div class="leave-sub">대휴 사용 가능 시간 (15분 단위 절사)</div>
       <div class="leave-chips" id="leave-chips"></div>
     </div>
-    <p class="note">※ 기준근무 07:00~16:00 (휴게 1h, 실근무 8h)<br>
-    ※ 초과→연장(+) / 미달→단축(-) / 결근→-8h / 임시공휴일→소정 제외<br>
-    ※ 연장 1h = 대휴 1h (1:1) / 15분 단위 절사</p>
+    <p class="note">※ 기준근무 07:00~16:00 (휴게 1h, 실근무 8h) / 초과→연장(+), 미달→단축(-), 결근→-8h<br>
+    ※ 임시공휴일 → 소정근로일 제외 / 연장 1h = 대휴 1h (1:1) / 15분 단위 절사</p>
   </div>
-
-  </div><!-- col-right -->
-  </div><!-- layout -->
-</div><!-- wrap -->
+</div>
 
 <!-- 모달 -->
 <div class="modal-bg" id="modal">
@@ -224,8 +226,14 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.1);margin:12px 0;}
       <div class="type-btn" id="btn-type-temphol" onclick="setType('temphol')">🌤<br>임시공휴일</div>
     </div>
     <div class="time-fields" id="time-fields">
-      <div class="row"><span class="lbl">출근 시간</span><div class="time-picker" id="tp-start"></div></div>
-      <div class="row"><span class="lbl">퇴근 시간</span><div class="time-picker" id="tp-end"></div></div>
+      <div class="row">
+        <span class="lbl">출근 시간</span>
+        <div class="time-picker" id="tp-start"></div>
+      </div>
+      <div class="row">
+        <span class="lbl">퇴근 시간</span>
+        <div class="time-picker" id="tp-end"></div>
+      </div>
     </div>
     <div class="diff-box zero" id="m-preview">기준시간과 동일</div>
     <div class="modal-btn-row">
@@ -239,20 +247,18 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.1);margin:12px 0;}
 
 <script>
 const H2025=["2025-01-01","2025-01-28","2025-01-29","2025-01-30","2025-03-01","2025-05-05","2025-05-06","2025-06-06","2025-08-15","2025-10-03","2025-10-05","2025-10-06","2025-10-07","2025-10-08","2025-10-09","2025-12-25"];
-const H2026=["2026-01-01","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-03-01","2026-03-02","2026-05-05","2026-05-24","2026-05-25","2026-06-06","2026-08-15","2026-09-24","2026-09-25","2026-09-26","2026-10-03","2026-10-09","2026-12-25"];
+const H2026=["2026-01-01","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-03-01","2026-03-02","2026-05-05","2026-05-24","2026-05-25","2026-06-03","2026-06-06","2026-08-15","2026-09-24","2026-09-25","2026-09-26","2026-10-03","2026-10-09","2026-12-25"];
 const HSET=new Set([...H2025,...H2026]);
 const fmt2=n=>String(n).padStart(2,'0');
 const dKey=(y,m,d)=>`${y}-${fmt2(m)}-${fmt2(d)}`;
 const isHol=(y,m,d)=>HSET.has(dKey(y,m,d));
 const isWE=dow=>dow===0||dow===6;
-const LS_KEY='geuntae_overrides';
-const LS_SCHEDULE='geuntae_schedule';
+const BASE_MIN=480;
 
 let BASE_START='07:00', BASE_END='16:00';
 let overrides={};
 let _mKey=null, _curType='normal';
 let _tpStart=null, _tpEnd=null;
-let _saveTimer=null;
 
 // ── 유틸 ──
 function toMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
@@ -274,45 +280,54 @@ function getDates(year,month){
   return dates;
 }
 
-// ── 자동저장 ──
-function saveToLocal(){
-  try{
-    localStorage.setItem(LS_KEY,JSON.stringify(overrides));
-    localStorage.setItem(LS_SCHEDULE,JSON.stringify({start:BASE_START,end:BASE_END,sel:document.getElementById('sel-schedule').value}));
-    updateSaveInfo();
-  }catch(e){console.error('저장 실패',e);}
+// ── 커스텀 시간 피커 (15분 단위) ──
+function createTimePicker(containerId, initValue, onChange) {
+  const container = document.getElementById(containerId);
+  let totalMin = toMin(initValue);
+  // 15분 단위로 스냅
+  totalMin = Math.round(totalMin / 15) * 15;
+
+  function getVal() {
+    return fmt2(Math.floor(totalMin/60)%24) + ':' + fmt2(totalMin%60);
+  }
+  function step(delta) {
+    totalMin = ((totalMin + delta) % (24*60) + 24*60) % (24*60);
+    render();
+    onChange(getVal());
+  }
+  function render() {
+    const hh = Math.floor(totalMin/60)%24, mm = totalMin%60;
+    container.querySelector('.tp-h').textContent = fmt2(hh);
+    container.querySelector('.tp-m').textContent = fmt2(mm);
+  }
+
+  container.innerHTML =
+    '<div class="tp-seg">' +
+      '<button class="tp-btn" data-d="-60">◀</button>' +
+      '<span class="tp-val tp-h">' + fmt2(Math.floor(totalMin/60)%24) + '</span>' +
+      '<button class="tp-btn" data-d="60">▶</button>' +
+    '</div>' +
+    '<span class="tp-colon">:</span>' +
+    '<div class="tp-seg">' +
+      '<button class="tp-btn" data-d="-15">◀</button>' +
+      '<span class="tp-val tp-m">' + fmt2(totalMin%60) + '</span>' +
+      '<button class="tp-btn" data-d="15">▶</button>' +
+    '</div>';
+
+  container.querySelectorAll('.tp-btn').forEach(btn => {
+    btn.addEventListener('click', () => step(parseInt(btn.dataset.d)));
+  });
+
+  return { getVal, setVal(v){ totalMin=Math.round(toMin(v)/15)*15; render(); onChange(getVal()); } };
 }
-function loadFromLocal(){
-  try{
-    const raw=localStorage.getItem(LS_KEY);
-    if(raw) overrides=JSON.parse(raw);
-    const sch=localStorage.getItem(LS_SCHEDULE);
-    if(sch){
-      const s=JSON.parse(sch);
-      BASE_START=s.start;BASE_END=s.end;
-      if(s.sel) document.getElementById('sel-schedule').value=s.sel;
-    }
-  }catch(e){overrides={};}
-}
-function updateSaveInfo(){
-  const keys=Object.keys(overrides);
-  const now=new Date();
-  const ts=`${fmt2(now.getHours())}:${fmt2(now.getMinutes())}`;
-  document.getElementById('save-info').textContent=
-    keys.length===0?`변경 없음 · 마지막 저장 ${ts}`:`변경 항목 ${keys.length}건 · 자동저장 ${ts}`;
-}
-function debounceSave(){
-  if(_saveTimer)clearTimeout(_saveTimer);
-  _saveTimer=setTimeout(saveToLocal,500);
-}
+
 
 // ── 근무시간 적용 ──
 function applySchedule(){
   const val=document.getElementById('sel-schedule').value;
   const [s,e]=val.split('|');
-  BASE_START=s;BASE_END=e;
+  BASE_START=s; BASE_END=e;
   document.getElementById('schedule-note').textContent=`기준: ${s} ~ ${e} (휴게 1h, 실근무 8h)`;
-  debounceSave();
   renderAll();
 }
 
@@ -324,13 +339,19 @@ function showToast(msg){
   _toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
 }
 
-// ── JSON 백업/복원 ──
+function updateSaveInfo(){
+  const keys=Object.keys(overrides);
+  document.getElementById('save-info').textContent=
+    keys.length===0?'저장된 변경 데이터 없음':`변경 항목 ${keys.length}건 — JSON 저장 버튼으로 파일 내보내기`;
+}
+
+// ── JSON 저장/불러오기 ──
 function exportJSON(){
   const y=parseInt(document.getElementById('sel-year').value);
   const m=parseInt(document.getElementById('sel-month').value);
-  const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),period:{year:y,month:m},schedule:{start:BASE_START,end:BASE_END},overrides},null,2)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),period:{year:y,month:m},overrides},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`근태_${y}${fmt2(m)}.json`;a.click();
-  showToast('✓ JSON 백업 완료');
+  showToast('✓ JSON 파일 저장 완료');
 }
 function importJSON(e){
   const file=e.target.files[0];if(!file)return;
@@ -341,43 +362,14 @@ function importJSON(e){
       if(!data.overrides)throw new Error();
       overrides=data.overrides;
       if(data.period){document.getElementById('sel-year').value=data.period.year;document.getElementById('sel-month').value=data.period.month;}
-      if(data.schedule){BASE_START=data.schedule.start;BASE_END=data.schedule.end;}
-      saveToLocal();renderAll();showToast('✓ 복원 완료 — '+Object.keys(overrides).length+'건');
+      renderAll();showToast('✓ 불러오기 완료 — '+Object.keys(overrides).length+'건');
     }catch{showToast('⚠ 파일 형식이 올바르지 않습니다');}
   };
   reader.readAsText(file);e.target.value='';
 }
 function clearAll(){
   if(!confirm('모든 근무 변경 데이터를 초기화할까요?'))return;
-  overrides={};saveToLocal();renderAll();showToast('초기화 완료');
-}
-
-// ── 타임피커 ──
-function createTimePicker(containerId,initValue,onChange){
-  const container=document.getElementById(containerId);
-  let totalMin=Math.round(toMin(initValue)/15)*15;
-  function getVal(){return fmt2(Math.floor(totalMin/60)%24)+':'+fmt2(totalMin%60);}
-  function step(delta){totalMin=((totalMin+delta)%(24*60)+24*60)%(24*60);render();onChange(getVal());}
-  function render(){
-    container.querySelector('.tp-h').textContent=fmt2(Math.floor(totalMin/60)%24);
-    container.querySelector('.tp-m').textContent=fmt2(totalMin%60);
-  }
-  container.innerHTML=
-    '<div class="tp-seg">'+
-      '<button class="tp-btn" data-d="-60">◀</button>'+
-      '<span class="tp-val tp-h">'+fmt2(Math.floor(totalMin/60)%24)+'</span>'+
-      '<button class="tp-btn" data-d="60">▶</button>'+
-    '</div>'+
-    '<span class="tp-colon">:</span>'+
-    '<div class="tp-seg">'+
-      '<button class="tp-btn" data-d="-15">◀</button>'+
-      '<span class="tp-val tp-m">'+fmt2(totalMin%60)+'</span>'+
-      '<button class="tp-btn" data-d="15">▶</button>'+
-    '</div>';
-  container.querySelectorAll('.tp-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>step(parseInt(btn.dataset.d)));
-  });
-  return {getVal};
+  overrides={};renderAll();showToast('초기화 완료');
 }
 
 // ── 모달 ──
@@ -389,38 +381,40 @@ function setType(t){
   document.getElementById('time-fields').className='time-fields'+(t==='normal'?'':' disabled');
   updatePreview();
 }
+
 function updatePreview(){
   const box=document.getElementById('m-preview');
   if(_curType==='absent'){box.className='diff-box absent-box';box.textContent=`결근 처리 → -${Math.floor(baseWorkMin()/60)}시간 대휴 차감`;return;}
   if(_curType==='temphol'){box.className='diff-box temphol-box';box.textContent='임시공휴일 → 소정근로일에서 제외';return;}
   if(!_tpStart||!_tpEnd)return;
-  const s=_tpStart.getVal(),e=_tpEnd.getVal();
-  const diff=diffMin(s,e),wm=workMin(s,e);
+  const s=_tpStart.getVal(), e=_tpEnd.getVal();
+  const diff=diffMin(s,e), wm=workMin(s,e);
   const wStr=Math.floor(wm/60)+'시간'+(wm%60?' '+wm%60+'분':'');
   if(diff===0){box.className='diff-box zero';box.textContent='기준시간과 동일 (실근무 8시간)';}
   else if(diff>0){box.className='diff-box plus';box.textContent=`실근무 ${wStr} → 연장 ${fmtDur(diff,false)} / 대휴 ${fmtDur(roundDown15(diff),false)}`;}
   else{box.className='diff-box minus';box.textContent=`실근무 ${wStr} → 단축 ${fmtDur(diff,true)}`;}
 }
+
 function openModal(key,y,m,d){
   _mKey=key;
   document.getElementById('modal-title').textContent=`${y}년 ${m}월 ${d}일`;
   document.getElementById('modal-sub').textContent=`기준: ${BASE_START} ~ ${BASE_END} (실근무 8h) — 15분 단위`;
   const ov=overrides[key];
-  const sv=(ov&&ov.start)||BASE_START,ev=(ov&&ov.end)||BASE_END;
-  _tpStart=createTimePicker('tp-start',sv,updatePreview);
-  _tpEnd=createTimePicker('tp-end',ev,updatePreview);
+  const sv=(ov&&ov.start)||BASE_START, ev=(ov&&ov.end)||BASE_END;
+  _tpStart=createTimePicker('tp-start', sv, updatePreview);
+  _tpEnd  =createTimePicker('tp-end',   ev, updatePreview);
   setType(ov?ov.type:'normal');
   document.getElementById('modal').classList.add('open');
 }
+
 function saveModal(){
   if(_curType==='absent')overrides[_mKey]={type:'absent'};
   else if(_curType==='temphol')overrides[_mKey]={type:'temphol'};
   else{
-    const s=_tpStart.getVal(),e=_tpEnd.getVal();
+    const s=_tpStart.getVal(), e=_tpEnd.getVal();
     if(s===BASE_START&&e===BASE_END)delete overrides[_mKey];
     else overrides[_mKey]={type:'normal',start:s,end:e};
   }
-  debounceSave();
   closeModal();renderAll();
 }
 function closeModal(){document.getElementById('modal').classList.remove('open');}
@@ -432,8 +426,9 @@ function renderAll(){
   const m=parseInt(document.getElementById('sel-month').value);
   const em=m===12?1:m+1,ey=m===12?y+1:y;
   document.getElementById('period-label').textContent=`${y}.${fmt2(m)}.21 ~ ${ey}.${fmt2(em)}.20`;
-  renderCal(y,m);calcSummary(y,m);
+  renderCal(y,m);calcSummary(y,m);updateSaveInfo();
 }
+
 function renderCal(year,month){
   const dates=getDates(year,month);
   const cal=document.getElementById('cal');cal.innerHTML='';
@@ -446,7 +441,7 @@ function renderCal(year,month){
     else if(isHol(y,mo,d)){
       cell.className='day-cell holiday';hDays++;
       const dot=document.createElement('span');dot.className='hol-dot';dot.textContent='공휴';cell.appendChild(dot);
-    }else{
+    } else {
       wDays++;const ov=overrides[key];
       if(ov){
         const badge=document.createElement('div');badge.className='badge';
@@ -460,13 +455,14 @@ function renderCal(year,month){
           if(diff!==0)badge.textContent=fmtDur(diff,true);
         }
         if(badge.textContent)cell.appendChild(badge);
-      }else cell.className='day-cell work';
+      } else cell.className='day-cell work';
       cell.onclick=()=>openModal(key,y,mo,d);
     }
     cal.appendChild(cell);
   });
   document.getElementById('cal-note').textContent=`소정근로일 ${wDays}일 | 공휴일 ${hDays}일`;
 }
+
 function calcSummary(year,month){
   const dates=getDates(year,month);
   let wDays=0,totalDiff=0,absentDays=0,tempHolDays=0;
@@ -496,30 +492,23 @@ function calcSummary(year,month){
   const chips=document.getElementById('leave-chips');chips.innerHTML='';
   if(leaveMin<=0&&(absentDays>0||totalDiff<0)){
     const c=document.createElement('div');c.className='chip';c.style.color='#a32d2d';c.textContent='결근/단축으로 대휴 없음';chips.appendChild(c);
-  }else{
+  } else {
     if(leaveMin>=480){const c=document.createElement('div');c.className='chip';c.textContent='연차 '+Math.floor(leaveMin/480)+'일 가능';chips.appendChild(c);}
     if(leaveMin>=240){const r=leaveMin%480;if(r>=240||leaveMin<480){const c=document.createElement('div');c.className='chip';c.textContent='반차 사용 가능';chips.appendChild(c);}}
     if(leaveMin>0&&leaveMin<240){const c=document.createElement('div');c.className='chip';c.textContent='시간 단위 사용';chips.appendChild(c);}
   }
   const dc=document.getElementById('detail-card'),dl=document.getElementById('detail-list');
-  const otMore=document.getElementById('ot-more');
   if(items.length>0){
-    const showItems=items.slice(0,10),hiddenCount=items.length-showItems.length;
-    dl.innerHTML=showItems.map(it=>{
+    dc.style.display='block';
+    dl.innerHTML=items.map(it=>{
       if(it.type==='absent')return `<div class="ot-row"><span class="ot-date">${it.label} <span style="font-size:11px;background:#f7c1c1;color:#791f1f;padding:1px 6px;border-radius:10px;">결근</span></span><span style="font-weight:500;color:#a32d2d">-8시간</span></div>`;
       if(it.type==='temphol')return `<div class="ot-row"><span class="ot-date">${it.label} <span style="font-size:11px;background:#faeeda;color:#633806;padding:1px 6px;border-radius:10px;">임시공휴일</span></span><span style="font-size:12px;color:#888780">소정 제외</span></div>`;
       const cls=it.diff>0?'#185fa5':'#a32d2d';
       return `<div class="ot-row"><span class="ot-date">${it.label} <span style="color:#888780;font-size:12px">${it.start}~${it.end}</span></span><span style="font-weight:500;color:${cls}">${fmtDur(it.diff,true)}</span></div>`;
     }).join('');
-    if(hiddenCount>0){otMore.style.display='block';otMore.textContent=`+ ${hiddenCount}건 더 있음 (총 ${items.length}건)`;}
-    else otMore.style.display='none';
-  }else{
-    dl.innerHTML='<div style="font-size:13px;color:#b4b2a9;padding:20px 0;text-align:center;">변경된 근무 내역이 없습니다</div>';
-    otMore.style.display='none';
-  }
+  } else dc.style.display='none';
 }
 
-// ── 초기화 ──
 (function init(){
   const ySel=document.getElementById('sel-year'),now=new Date();
   for(let y=2024;y<=2027;y++){
@@ -527,9 +516,7 @@ function calcSummary(year,month){
     if(y===now.getFullYear())o.selected=true;ySel.appendChild(o);
   }
   document.getElementById('sel-month').value=now.getMonth()+1;
-  loadFromLocal();
   renderAll();
-  updateSaveInfo();
 })();
 </script>
 </body>
