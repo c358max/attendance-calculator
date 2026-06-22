@@ -72,7 +72,10 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.1);margin:12px 0;}
 .day-cell.empty{cursor:default;}
 .day-cell.work{background:#f1efe8;color:#1a1a18;}
 .day-cell.work:hover{border-color:rgba(0,0,0,.2);}
-.day-cell.weekend{color:#b4b2a9;cursor:default;}
+.day-cell.weekend{color:#b4b2a9;cursor:pointer;}
+.day-cell.weekend:hover{border-color:rgba(0,0,0,.2);}
+.day-cell.weekend-work{background:#f3edfb;color:#4a1a7a;border-color:#c084e0;cursor:pointer;}
+.day-cell.weekend-work:hover{border-color:#a855c8;}
 .day-cell.holiday{color:#e24b4a;cursor:default;}
 .day-cell.plus{background:#e6f1fb;color:#0c447c;border-color:#85b7eb;}
 .day-cell.minus{background:#fcebeb;color:#791f1f;border-color:#f09595;}
@@ -81,7 +84,7 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.1);margin:12px 0;}
 .day-cell.modified{background:#f1efe8;border-color:#888;}
 .badge{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:9px;white-space:nowrap;font-weight:500;}
 .badge.plus{color:#185fa5;}.badge.minus{color:#a32d2d;}
-.badge.absent{color:#791f1f;}.badge.temphol{color:#633806;}
+.badge.absent{color:#791f1f;}.badge.temphol{color:#633806;}.badge.weekend{color:#4a1a7a;}
 .hol-dot{font-size:8px;color:#e24b4a;display:block;}
 .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;}
 .legend-item{font-size:11px;color:#888780;display:flex;align-items:center;gap:4px;}
@@ -201,6 +204,7 @@ hr{border:none;border-top:0.5px solid rgba(0,0,0,.1);margin:12px 0;}
       <div class="legend-item"><span class="legend-dot" style="background:#fcebeb;border:0.5px solid #f09595;"></span>단축</div>
       <div class="legend-item"><span class="legend-dot" style="background:#f7c1c1;border:0.5px solid #e24b4a;"></span>결근</div>
       <div class="legend-item"><span class="legend-dot" style="background:#faeeda;border:0.5px solid #ef9f27;"></span>임시공휴일</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#f3edfb;border:0.5px solid #c084e0;"></span>주말출근</div>
     </div>
   </div>
 
@@ -275,12 +279,13 @@ const LS_SCHEDULE='geuntae_schedule';
 let BASE_START='07:00', BASE_END='16:00';
 let overrides={};
 let _mKey=null, _curType='normal';
-let _tpStart=null, _tpEnd=null;
+let _tpStart=null, _tpEnd=null, _isWeekendDay=false;
 let _saveTimer=null;
 
 // ── 유틸 ──
 function toMin(t){const[h,m]=t.split(':').map(Number);return h*60+m;}
-function workMin(s,e){let sm=toMin(s),em=toMin(e);if(em<=sm)em+=24*60;const t=em-sm;return Math.max(0,t-(t>=300?60:0));}
+function restMin(t){return t>=300?60:t>=270?30:0;}
+function workMin(s,e){let sm=toMin(s),em=toMin(e);if(em<=sm)em+=24*60;const t=em-sm;return Math.max(0,t-restMin(t));}
 function baseWorkMin(){return workMin(BASE_START,BASE_END);}
 function diffMin(s,e){return workMin(s,e)-baseWorkMin();}
 function roundDown15(m){return Math.floor(m/15)*15;}
@@ -419,16 +424,29 @@ function updatePreview(){
   if(_curType==='temphol'){box.className='diff-box temphol-box';box.textContent='임시공휴일 → 소정근로일에서 제외';return;}
   if(!_tpStart||!_tpEnd)return;
   const s=_tpStart.getVal(),e=_tpEnd.getVal();
+  if(_isWeekendDay){
+    // 주말: 휴게시간 차감 후 대휴 적립
+    const wm=workMin(s,e);
+    const leave=roundDown15(wm);
+    if(wm===0){box.className='diff-box zero';box.textContent='시간을 입력해 주세요';}
+    else{box.className='diff-box plus';box.textContent=`연장 ${fmtDur(wm,false)} / 대휴 ${fmtDur(leave,false)}`;}
+    return;
+  }
   const diff=diffMin(s,e),wm=workMin(s,e);
   const wStr=Math.floor(wm/60)+'시간'+(wm%60?' '+wm%60+'분':'');
   if(diff===0){box.className='diff-box zero';box.textContent='기준시간과 동일 (실근무 8시간)';}
-  else if(diff>0){box.className='diff-box plus';box.textContent=`실근무 ${wStr} → 연장 ${fmtDur(diff,false)} / 대휴 ${fmtDur(roundDown15(diff),false)}`;}
-  else{box.className='diff-box minus';box.textContent=`실근무 ${wStr} → 단축 ${fmtDur(diff,true)}`;}
+  else if(diff>0){box.className='diff-box plus';box.textContent=`연장 ${fmtDur(diff,false)} / 대휴 ${fmtDur(roundDown15(diff),false)}`;}
+  else{box.className='diff-box minus';box.textContent=`단축 ${fmtDur(diff,true)}`;}
 }
-function openModal(key,y,m,d){
+function openModal(key,y,m,d,isWeekendDay=false){
   _mKey=key;
   document.getElementById('modal-title').textContent=`${y}년 ${m}월 ${d}일`;
-  document.getElementById('modal-sub').textContent=`기준: ${BASE_START} ~ ${BASE_END} (실근무 8h) — 15분 단위`;
+  document.getElementById('modal-sub').textContent=isWeekendDay?`주말 출근 — 근무시간 입력 (15분 단위)`:`기준: ${BASE_START} ~ ${BASE_END} (실근무 8h) — 15분 단위`;
+  // 주말이면 결근/임시공휴일 버튼 숨기기
+  _isWeekendDay=isWeekendDay;
+  document.getElementById('btn-type-absent').style.display=isWeekendDay?'none':'';
+  document.getElementById('btn-type-temphol').style.display=isWeekendDay?'none':'';
+  if(isWeekendDay) setType('normal');
   const ov=overrides[key];
   const sv=(ov&&ov.start)||BASE_START,ev=(ov&&ov.end)||BASE_END;
   _tpStart=createTimePicker('tp-start',sv,updatePreview);
@@ -441,8 +459,7 @@ function saveModal(){
   else if(_curType==='temphol')overrides[_mKey]={type:'temphol'};
   else{
     const s=_tpStart.getVal(),e=_tpEnd.getVal();
-    if(s===BASE_START&&e===BASE_END)delete overrides[_mKey];
-    else overrides[_mKey]={type:'normal',start:s,end:e};
+    overrides[_mKey]={type:'normal',start:s,end:e};
   }
   debounceSave();
   closeModal();renderAll();
@@ -466,7 +483,19 @@ function renderCal(year,month){
   dates.forEach(dt=>{
     const y=dt.getFullYear(),mo=dt.getMonth()+1,d=dt.getDate(),key=dKey(y,mo,d),dow=dt.getDay();
     const cell=document.createElement('div');cell.textContent=d;
-    if(isWE(dow)){cell.className='day-cell weekend';}
+    if(isWE(dow)){
+        const ov=overrides[key];
+        if(ov){
+          cell.className='day-cell weekend-work';
+          const badge=document.createElement('div');badge.className='badge weekend';
+          const weekendTotal=workMin(ov.start,ov.end);
+          badge.textContent=weekendTotal>0?'+'+fmtDur(weekendTotal,false):'-';
+          cell.appendChild(badge);
+        } else {
+          cell.className='day-cell weekend';
+        }
+        cell.onclick=()=>openModal(key,y,mo,d,true);
+      }
     else if(isHol(y,mo,d)){
       cell.className='day-cell holiday';hDays++;
       const dot=document.createElement('span');dot.className='hol-dot';dot.textContent='공휴';cell.appendChild(dot);
@@ -478,10 +507,9 @@ function renderCal(year,month){
         else if(ov.type==='temphol'){cell.className='day-cell temphol';badge.className='badge temphol';badge.textContent='임시공휴';}
         else{
           const diff=diffMin(ov.start,ov.end);
-          if(diff>0){cell.className='day-cell plus work';badge.className='badge plus';}
-          else if(diff<0){cell.className='day-cell minus work';badge.className='badge minus';}
-          else{cell.className='day-cell modified work';}
-          if(diff!==0)badge.textContent=fmtDur(diff,true);
+          if(diff>0){cell.className='day-cell plus work';badge.className='badge plus';badge.textContent=fmtDur(diff,true);}
+          else if(diff<0){cell.className='day-cell minus work';badge.className='badge minus';badge.textContent=fmtDur(diff,true);}
+          else{cell.className='day-cell modified work';badge.className='badge';badge.textContent='-';}
         }
         if(badge.textContent)cell.appendChild(badge);
       }else cell.className='day-cell work';
@@ -497,15 +525,24 @@ function calcSummary(year,month){
   const items=[];
   dates.forEach(dt=>{
     const y=dt.getFullYear(),mo=dt.getMonth()+1,d=dt.getDate(),key=dKey(y,mo,d);
-    if(!isWE(dt.getDay())&&!isHol(y,mo,d)){
+    const isWeekend=isWE(dt.getDay());
+    if(!isWeekend&&!isHol(y,mo,d)){
       const ov=overrides[key];
       if(ov&&ov.type==='temphol'){tempHolDays++;items.push({label:`${mo}/${d}`,type:'temphol'});}
       else{
         wDays++;
         if(ov){
           if(ov.type==='absent'){absentDays++;totalDiff-=baseWorkMin();items.push({label:`${mo}/${d}`,type:'absent'});}
-          else{const diff=diffMin(ov.start,ov.end);totalDiff+=diff;if(diff!==0)items.push({label:`${mo}/${d}`,start:ov.start,end:ov.end,type:'normal',diff});}
+          else{const diff=diffMin(ov.start,ov.end);totalDiff+=diff;items.push({label:`${mo}/${d}`,start:ov.start,end:ov.end,type:'normal',diff});}
         }
+      }
+    } else if(isWeekend){
+      const ov=overrides[key];
+      if(ov&&ov.type==='normal'){
+        // 주말 근무는 휴게 차감 없이 전체 근무시간 대휴 적립
+        const totalWeekendMin=workMin(ov.start,ov.end);
+        totalDiff+=totalWeekendMin;
+        items.push({label:`${mo}/${d} (주말)`,start:ov.start,end:ov.end,type:'weekend',diff:totalWeekendMin});
       }
     }
   });
@@ -532,8 +569,9 @@ function calcSummary(year,month){
     dl.innerHTML=showItems.map(it=>{
       if(it.type==='absent')return `<div class="ot-row"><span class="ot-date">${it.label} <span style="font-size:11px;background:#f7c1c1;color:#791f1f;padding:1px 6px;border-radius:10px;">결근</span></span><span style="font-weight:500;color:#a32d2d">-8시간</span></div>`;
       if(it.type==='temphol')return `<div class="ot-row"><span class="ot-date">${it.label} <span style="font-size:11px;background:#faeeda;color:#633806;padding:1px 6px;border-radius:10px;">임시공휴일</span></span><span style="font-size:12px;color:#888780">소정 제외</span></div>`;
-      const cls=it.diff>0?'#185fa5':'#a32d2d';
-      return `<div class="ot-row"><span class="ot-date">${it.label} <span style="color:#888780;font-size:12px">${it.start}~${it.end}</span></span><span style="font-weight:500;color:${cls}">${fmtDur(it.diff,true)}</span></div>`;
+      const cls=it.type==='weekend'?'#4a1a7a':it.diff>0?'#185fa5':it.diff<0?'#a32d2d':'#888780';
+      const diffStr=it.type==='weekend'?'+'+fmtDur(it.diff,false):it.diff===0?'-':fmtDur(it.diff,true);
+      return `<div class="ot-row"><span class="ot-date">${it.label} <span style="color:#888780;font-size:12px">${it.start}~${it.end}</span></span><span style="font-weight:500;color:${cls}">${diffStr}</span></div>`;
     }).join('');
     if(hiddenCount>0){otMore.style.display='block';otMore.textContent=`+ ${hiddenCount}건 더 있음 (총 ${items.length}건)`;}
     else otMore.style.display='none';
